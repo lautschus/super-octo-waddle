@@ -61,8 +61,8 @@ class Ship:
     #if >0, adds subtracts 1 from cargo, pops the item from the end of cargo list
     #adds item instance to the end of inventory list
         itemName = itemName.lower()
-        if itemName in self.cargo: 
-            if self.cargo[itemName][0]>0:
+        if itemName in cargo:
+            if self.cargo[itemName]>0:
                 self.pilot.items[itemName][0]+=1
                 self.cargo[itemName][0]-=1
                 self.pilot.items[itemName].append(self.cargo[itemName].pop())

@@ -111,8 +111,7 @@ class Planet(Room):
             newHouse.createRoom("Living Room",updates)
             newHouse.createRoom("Kitchen",updates)
             player.items[newHouse.key.name]=[1, newHouse.key]
-            for i in range(newHouse.cost):
-                player.remove("wood")
+            player.remove("wood",newHouse.cost)
         else:
             input("You do not have enough wood.")
             
@@ -141,8 +140,7 @@ class River(Room):
             return None
         if player.items["wood"][0]>=newMill.cost:
             self.locations.append(newMill)
-            for i in range(newMill.cost):
-                player.remove("wood")
+            player.remove("wood",newMill.cost)
         else:
             input("You do not have enough wood.")
 

@@ -1,20 +1,27 @@
+import os
+def clear():
+    os.system('cls' if os.name == 'nt' else 'clear')
+clear()
+print("Loading...")
 from room import Room
-from planet import Planet, River, Mill, House
+from planet import Planet, River, Mill
 from player import Player
 from monster import Monster
 import time
 from items import *
 import ships
 import sys
-import os
+
 import updater
 import random
 import subprocess
 import pickle
 
+time = 0
+day = 1
+printTime = "00:00"
 #gets working directory in order to save
-currentos = sys.platform
-if currentos == "win32":
+if sys.platform == "win32":
     savePath = os.getcwd()+"\saves"
 else:
     savePath = os.getcwd()+"/saves"
@@ -33,16 +40,12 @@ except ImportError:
     import matplotlib.pyplot as plt
     import matplotlib.patches as patches        
 
-def save(currentos):#Saves it as a .dat file using pickle. 
+def save():#Saves it as a .dat file using pickle. 
     #store the main variables that run the game, the player, the planets, and the update list.
     name = input("What is your name? ").lower()
     saveName = name+".dat"
-    if currentos == "win32":
-        with open(savePath+'\\'+saveName, 'wb') as f:
-            pickle.dump([player, worlds, updates], f, protocol=2)
-    else:
-        with open(savePath+'//'+saveName, 'wb') as f:
-            pickle.dump([player, worlds, updates], f, protocol=2)
+    with open(savePath+'\\'+saveName, 'wb') as f:
+        pickle.dump([player, worlds, updates], f, protocol=2)
         
 def selectDifficulty():
     print("Easy")
@@ -60,6 +63,14 @@ def selectDifficulty():
     return planets
 
 def createWorld():
+    clear()
+    uniNum = random.randint(0,9999)
+    uniNumString = str(uniNum)
+    print("Welcome to Universe "+uniNumString+".")
+    print("Jim has lost himself on an unkown planet search for red vines.")
+    print("He needs your help to make it back to his home.")
+    input("Will you help Jim? ")
+    clear()
     planets = selectDifficulty()
     for i in range(planets):
         worlds.append(Planet("Planet-"+str(i),"Welcome to "+"Planet-"+str(i),i*random.randint(0,100),updates))
@@ -71,25 +82,15 @@ def createWorld():
         if random.random()>.5:
             river = River(i,updates)
             i.addLocation(river)
-
-    player.location = worlds[0]
-    player.ship = ships.Ship(player,updates)
-
-    #return jim to his house on planet 0
-    jim = Jim.Jim(updates)
-    jim.putInRoom(worlds[random.randint(1,planets-1)])
-    jimsHouse = House('An empty house','You see a handful of red vines on the windowsill',player,updates)
-    worlds[0].addLocation(jimsHouse)
-    jimBait = RedVines.RedVines(updates)
-    jimBait.putInRoom(jimsHouse)
-    jimsHouse.key.putInRoom(worlds[0])
             
         
     i = Rock.Rock(updates)
     i.putInRoom(worlds[0])
-        
 
-def Load(currentos):
+    player.location = worlds[0]
+    player.ship = ships.Ship(player,updates)        
+
+def load():
     clear()
     global player
     global worlds
@@ -106,12 +107,8 @@ def Load(currentos):
             createWorld()
             completed = True
         elif name in saveDir:
-            if currentos == "win32":
-                with open(savePath+"\\"+name, 'rb') as f:
-                    player, worlds,updates = pickle.load(f)
-            else:
-                with open(savePath+"//"+name, 'rb') as f:
-                    player, worlds,updates = pickle.load(f)
+            with open(savePath+"\\"+name, 'rb') as f:
+                player, worlds,updates = pickle.load(f)
             completed = True
         else:
             input("Invalid response, press enter to continue.")
@@ -126,7 +123,7 @@ def checkForSave():
     if hasSave:
         answer = input("Would you like to load a previous save? Y/N ").lower()
         if answer in ["yes","y","ye","yess"]:
-            Load(currentos)
+            load()
             
         else:
             createWorld()
@@ -161,6 +158,7 @@ def clear():
 def printSituation():
     clear()
     print(player.location.desc)
+    print("Day "+str(day)+" "+printTime)
     print()
     if player.location.hasMonsters():
         print("This "+player.location.type+" contains the following monsters:")#print proper location type
@@ -227,14 +225,12 @@ def showHelp():
     print("ship -- tells you about your ship")
     print("map <location or planets> -- shows the map of either your current location or the planets")
     print("inventory <me or ship> -- shows inventory of you or your ships cargo.")
-    print("store <item name> -- moves item from your inventory into the ship's cargo.")
-    print("retrieve <item name> -- moves item from the ship's cargo into your inventory")
+    print("store <item name> -- moves item from your inventory into the ships cargo.")
     print("inspect <item> -- gives description of item")
     print("wait -- wait one second")
     print("wait <number> -- wait that many seconds.")
-    print("whack <item> -- cuts down a tree")
+    print("cutdown tree -- cuts down a tree")
     print("build house -- Costs 10 wood, builds a house")
-    print("offer <someone> <something> -- offer item to another being")
     print("!! -- repeat last command.")
     print("? <command> -- learn more about command.")
     print()
@@ -243,12 +239,7 @@ def showHelp():
 #Setup code above this line
 #Game code below this line
     
-def youvewon():
-    clear()
-    u = random.randint(1000,9000)
-    input("You win!")
-    input("You have rescued Jim!")
-    input("Enjoy your travels; universe "+str(u)+" is forever in your debt!")
+    
 
 
 
@@ -258,7 +249,6 @@ input("Checking for Save, press enter to continue.")
 checkForSave()
 lastCommand = None
 playing = True
-winner = False
 while playing and player.alive:
 
     printSituation()
@@ -329,17 +319,13 @@ while playing and player.alive:
                     if n>0:
                         target = target+" "+findNameIn[n].rstrip()
                 i=0
-                if player.location.items[target][0]>0:
+                
+                if target in player.location.items and player.location.items[target][0]>0:
                     while i<number and target and player.carriedWeight<player.carryCapacity:
+
                         targetItem = player.location.getItemByName(target)
-                        if targetItem.name == "jim" and targetItem.satisfied == False:
-                            input("Jim does not trust you.")
-                            target = False
-                        else:
-                            player.pickup(targetItem)
-                            if targetItem.name == "jim":
-                                input("Bring our Jim home!")
-                            i+=1
+                        player.pickup(targetItem)
+                        i+=1
                 else:
                     print("No such item.")
             else:
@@ -418,23 +404,12 @@ while playing and player.alive:
             player.drop(command[5:])
             
         elif commandWords[0].lower() == "inspect":#inspects item, prints its description
-            targetName = command[8:]
+            itemName = command[8:]
             inspected = False
             itemList = player.location.items
-            locationList = player.location.locations
-            if targetName in itemList and itemList[targetName][0]>0:
-                clear()
-                print(itemList[targetName][1].desc)
-                print()
-                input("Press enter to continue...")
+            if itemName in itemList and itemList[itemName][0]>0:
+                itemList[itemName][1].describe()
                 inspected = True
-            for i in locationList:
-                if i.name == targetName:
-                    clear()
-                    print(i.desc)
-                    print()
-                    input("Press enter to continue...")
-
             
         elif commandWords[0].lower() == "map":#pulls up map of planet or current location. Needs maps for buildings implemented
             if len(commandWords)==1:
@@ -451,13 +426,7 @@ while playing and player.alive:
             input("Press Enter to Contiue.")
             
         elif commandWords[0].lower() == "store":#place item from inventory into the ships cargo
-            itemName = command[6:].lower() #all words after 'store'
-            player.store(itemName)
-            if itemName == "jim":
-                youvewon()
-                
-        elif commandWords[0].lower() == "retrieve":#place item from the ship's cargo in inventory
-            player.ship.retrieve(str(command[9:]).lower())
+            player.store(commandWords[1].lower())
             
         elif commandWords[0].lower() == "ship":#view information about ship
             print("Current Fuel: "+str(player.ship.currentFuel))
@@ -511,7 +480,7 @@ while playing and player.alive:
                 edible = player.items[commandWords[1]][len( player.items[commandWords[1]])-1]
                 if edible.heals:
                     player.currentHealth+=edible.heals
-                    player.remove(commandWords[1])
+                    player.remove(commandWords[1],1)
                 else:
                     input("This is not edible.")
             else:
@@ -524,34 +493,24 @@ while playing and player.alive:
         #used to craft items
             if commandWords[1] == "axe":
                 if player.items["wood"][0]>0:
-                    newAxe = Axe.Axe(3,updates)
-                    player.location.addItem(newAxe)
+                    Axe.Axe(updates,player)
+                    newAxe = player.location.getItemByName("Axe")
                     player.pickup(newAxe)
-                    player.items["wood"][0]-=1
             timePasses = True
-
-        elif commandWords[0].lower() == "offer":
-            if commandWords[1].lower() == "jim":
-                if commandWords[2].lower() == "red": # "vines" being word 3
-                    if player.items["red vines"][0]>0:
-                        if player.location.items["jim"][0]>0:
-                            player.items["red vines"][0]-=1
-                            Jim = player.location.getItemByName("jim")
-                            Jim.satisfied = True
-                            print()
-                            input("Jim: Wow. That's so...thank you. You are too kind.")
-                        else: 
-                            input("Jim isn't here")
-                    else: 
-                        input("You don't have red vines")
-                else:
-                    print("Not a valid command")
-
                     
                     
         elif commandWords[0] == "save":
         #used to save
-            save(currentos)
+            save()
+            
+        elif commandWords[0] == "upgrade":
+            itemName = command[8:]
+            if itemName in player.items:
+                upgrade = player.getItem(itemName)
+                upgrade.upgrade()
+                
+        elif commandWords[0] == "end":
+            playing = False
         else:
             print("Not a valid command")
             commandSuccess = False
@@ -559,8 +518,16 @@ while playing and player.alive:
         if command !="" and commandSuccess == True:
             lastCommand = command    
     if timePasses == True:
+        time+=.0125
+        printTime = str(2400*time)
+        if time == 1:
+            time == 0
+            day +=1
         updater.updateAll()
         
+        
+        
+clear()
 
 
     

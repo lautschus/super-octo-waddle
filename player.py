@@ -9,7 +9,7 @@ class Player:
     def __init__(self,updates):
         self.type = "player"
         self.location = None
-        self.level = 18
+        self.level = 1
         self.items = {}
         self.currentHealth = 20
         self.maxHealth = 50*self.level
@@ -18,7 +18,7 @@ class Player:
         self.carryCapacity = 20+10*self.level
         self.carriedWeight = 0
         self.outside = True
-        self.exp = 20000
+        self.exp = 0
         self.holding = None
         self.updates = updates
         updates.append(self)
@@ -54,16 +54,17 @@ class Player:
                 self.carriedWeight-=item.weight
                 self.location.addItem(item)
         
-    def remove(self,itemName):
+    def remove(self,itemName,n):
     #removes item from inventory
     #subtracts weight
     #item goes poof
-        if itemName in self.items:
-            if self.items[itemName][0]>0:
-                self.items[itemName][0]-=1
-                listItem = self.items[itemName].pop()
-                self.carriedWeight-=listItem.weight
-                updater.deregister(listItem)
+        for i in range(n):
+            if itemName in self.items:
+                if self.items[itemName][0]>0:
+                    self.items[itemName][0]-=1
+                    listItem = self.items[itemName].pop()
+                    self.carriedWeight-=listItem.weight
+                    updater.deregister(listItem)
                 
         
     def showInventory(self):
@@ -75,9 +76,22 @@ class Player:
         print("You are currently carrying:")
         print()
         for i in self.items:
-            print(i+" x "+str(self.items[i][0]))
+            if self.items[i][0]>0:
+            
+                print(i+" x "+str(self.items[i][0]))
         print()
         input("Press enter to continue...")
+        
+    def popItem(self,itemName):
+        if itemName in self.items and self.items[itemName][0]>0:
+            self.items[itemName][0]-=1
+            return self.items[itemName].pop()
+        
+    def getItem(self,itemName):
+        if itemName in self.items and self.items[itemName][0]>0:
+            length = len(self.items[itemName])-1
+            item = self.items[itemName][length]
+            return item
         
     def attackMonster(self, mon):
         clear()
@@ -97,7 +111,7 @@ class Player:
         input("Press enter to continue...")
         
     def store(self,itemName):
-    #move item from inventory to ship's cargo
+    #move item from inventory to ships cargo
         if itemName in self.items:
             if self.items[itemName][0] < 1:
                 input("No "+itemName+"s "+"to store.")
@@ -108,11 +122,6 @@ class Player:
                 self.items[itemName][0]-=1
         else:
             return("What is a "+itemName+"?")
-
-    def retrieve(self,itemname):
-    #move item from ship's cargo to inventory
-        self.ship.retrieve(itemname)
-
 
     def info(self):
     #prints information about self
@@ -134,6 +143,14 @@ class Player:
                 self.level+=1
                 clear()
                 input("You are now level "+str(self.level))
+                
+    def addItem(self, item):
+        if item.name in self.items:
+            self.items[item.name][0]+=1
+            self.items[item.name].append(item)
+        else:
+            self.items[item.name]=[1,item]
+        item.loc = self
                 
     def hold(self,itemName):
         if itemName in self.items:
